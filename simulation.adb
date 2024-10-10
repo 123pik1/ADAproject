@@ -1,5 +1,11 @@
 -- A skeleton of an ADA program for an assignment in programming languages
 
+--Autorzy:
+--Paweł Rietz
+--Paweł Narwojsz
+--Piotr Kaczorowski
+
+
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Characters.Latin_1; use Ada.Characters.Latin_1;
 with Ada.Integer_Text_IO;
@@ -7,13 +13,16 @@ with Ada.Numerics.Discrete_Random;
 
 
 procedure Simulation is
-
    ----GLOBAL VARIABLES---
 
    Number_Of_Producers: constant Integer := 5;
    Number_Of_Dishes: constant Integer := 3;
    Number_Of_Consumers: constant Integer := 3;
-
+   --TODO refactor to use enumeration
+   type Ingredient_Type is 
+      (Past, Potato, Tomato, Chicken, Pork);
+   type Dish_Type is
+      (Bolognes, Steak, Hamburger);
    subtype Producer_Type is Integer range 1 .. Number_Of_Producers;
    subtype Dish_Type is Integer range 1 .. Number_Of_Dishes;
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
