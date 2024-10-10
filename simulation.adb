@@ -12,7 +12,7 @@ procedure Simulation is
 
    Number_Of_Producers: constant Integer := 5;
    Number_Of_Dishes: constant Integer := 3;
-   Number_Of_Consumers: constant Integer := 2;
+   Number_Of_Consumers: constant Integer := 3;
 
    subtype Producer_Type is Integer range 1 .. Number_Of_Producers;
    subtype Dish_Type is Integer range 1 .. Number_Of_Dishes;
@@ -108,7 +108,7 @@ procedure Simulation is
       Dish_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
         of String(1 .. 6)
-        := ("Eater1", "Eater2");
+        := ("Eater1", "Eater2", "Eater3");
    begin
       accept Start(Consumer_Number: in Consumer_Type;
                    Consumption_Time: in Integer) do
@@ -123,7 +123,7 @@ procedure Simulation is
          Dish_Type := Random_Assembly.Random(GA);
          -- take an assembly for consumption
          B.Deliver(Dish_Type, Assembly_Number);
-         Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes assembly " &
+         Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes dish " &
                     Assembly_Name(Dish_Type) & " number " &
                     Integer'Image(Assembly_Number) & ESC & "[0m");
       end loop;
