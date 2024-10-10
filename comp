@@ -1,1 +1,2 @@
 gnatmake simulation.adb
+./simulation
