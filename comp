@@ -1,2 +1,5 @@
 gnatmake simulation.adb
+rm simulation.ali
+rm simulation.o
 ./simulation
+rm simulation
