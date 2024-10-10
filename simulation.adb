@@ -21,7 +21,7 @@ procedure Simulation is
 
    --each Producer is assigned a Product that it produces
    Product_Name: constant array (Producer_Type) of String(1 .. 7)
-     := ("Pasta  ", "Potato ", "Tomato ", "Chicken", "Pork   ");
+      := ("Pastani", "Potaton", "Tomaton", "Chicken", "Porknig");
    --Assembly is a collection of products
    Assembly_Name: constant array (Assembly_Type) of String(1 .. 9)
      := ("Bolognes ", "Steak    ", "Hamburger");   
