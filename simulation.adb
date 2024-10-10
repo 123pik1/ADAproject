@@ -11,11 +11,11 @@ procedure Simulation is
    ----GLOBAL VARIABLES---
 
    Number_Of_Producers: constant Integer := 5;
-   Number_Of_Assemblies: constant Integer := 3;
+   Number_Of_Dishes: constant Integer := 3;
    Number_Of_Consumers: constant Integer := 2;
 
    subtype Producer_Type is Integer range 1 .. Number_Of_Producers;
-   subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
+   subtype Dish_Type is Integer range 1 .. Number_Of_Dishes;
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
 
 
@@ -24,7 +24,7 @@ procedure Simulation is
       := ("Pastani", "Potaton", "Tomaton", "Chicken", "Porknig");
 
    --Assembly is a collection of products
-   Assembly_Name: constant array (Assembly_Type) of String(1 .. 9)
+   Assembly_Name: constant array (Dish_Type) of String(1 .. 9)
      := ("Bolognes ", "Steak    ", "Hamburger");   
 
 
@@ -47,7 +47,7 @@ procedure Simulation is
       -- Accept a product to the storage (provided there is a room for it)
       entry Take(Product: in Producer_Type; Number: in Integer);
       -- Deliver an assembly (provided there are enough products for it)
-      entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
+      entry Deliver(Assembly: in Dish_Type; Number: out Integer);
    end Buffer;
 
    P: array ( 1 .. Number_Of_Producers ) of Producer;
@@ -98,14 +98,14 @@ procedure Simulation is
 
       --each Consumer takes any (random) Assembly from the Buffer
       package Random_Assembly is new
-        Ada.Numerics.Discrete_Random(Assembly_Type);
+        Ada.Numerics.Discrete_Random(Dish_Type);
 
       G: Random_Consumption.Generator;
       GA: Random_Assembly.Generator;
       Consumer_Nb: Consumer_Type;
       Assembly_Number: Integer;
       Consumption: Integer;
-      Assembly_Type: Integer;
+      Dish_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
         of String(1 .. 6)
         := ("Eater1", "Eater2");
@@ -120,11 +120,11 @@ procedure Simulation is
       Put_Line(ESC & "[96m" & "C: Eater named " & Consumer_Name(Consumer_Nb)  & " enters restaurant");
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
-         Assembly_Type := Random_Assembly.Random(GA);
+         Dish_Type := Random_Assembly.Random(GA);
          -- take an assembly for consumption
-         B.Deliver(Assembly_Type, Assembly_Number);
+         B.Deliver(Dish_Type, Assembly_Number);
          Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes assembly " &
-                    Assembly_Name(Assembly_Type) & " number " &
+                    Assembly_Name(Dish_Type) & " number " &
                     Integer'Image(Assembly_Number) & ESC & "[0m");
       end loop;
    end Consumer;
@@ -137,12 +137,12 @@ procedure Simulation is
       type Storage_type is array (Producer_Type) of Integer;
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
-      Assembly_Content: array(Assembly_Type, Producer_Type) of Integer
+      Assembly_Content: array(Dish_Type, Producer_Type) of Integer
         := ((2, 1, 2, 0, 2),
             (1, 2, 0, 1, 0),
             (3, 2, 2, 0, 1));
       Max_Assembly_Content: array(Producer_Type) of Integer;
-      Assembly_Number: array(Assembly_Type) of Integer
+      Assembly_Number: array(Dish_Type) of Integer
         := (1, 1, 1);
       In_Storage: Integer := 0;
 
@@ -150,7 +150,7 @@ procedure Simulation is
       begin
          for W in Producer_Type loop
             Max_Assembly_Content(W) := 0;
-            for Z in Assembly_Type loop
+            for Z in Dish_Type loop
                if Assembly_Content(Z, W) > Max_Assembly_Content(W) then
                   Max_Assembly_Content(W) := Assembly_Content(Z, W);
                end if;
@@ -167,7 +167,7 @@ procedure Simulation is
          end if;
       end Can_Accept;
 
-      function Can_Deliver(Assembly: Assembly_Type) return Boolean is
+      function Can_Deliver(Assembly: Dish_Type) return Boolean is
       begin
          for W in Producer_Type loop
             if Storage(W) < Assembly_Content(Assembly, W) then
@@ -204,7 +204,7 @@ procedure Simulation is
          end Take;
          Storage_Contents;
 
-         accept Deliver(Assembly: in Assembly_Type; Number: out Integer) do
+         accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
             if Can_Deliver(Assembly) then
                Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
                           Integer'Image(Assembly_Number(Assembly))& ESC & "[0m");
