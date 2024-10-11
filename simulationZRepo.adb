@@ -7,13 +7,13 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 procedure Simulation is
     type Ingredient_Type is
        (Dough, Cheese, Ham, Mushrooms, Tomato, Pepper, Pineapple);
-    type Pizza_Type is
+    type Dish_Type is
        (Margherita, Capriciosa, Hawaii, Pepperoni, Vegetariana);
     type Client_Type is (Student, Professor, Dean);
-    package Random_Pizza is new Ada.Numerics.Discrete_Random (Pizza_Type);
+    package Random_Pizza is new Ada.Numerics.Discrete_Random (Dish_Type);
 
-    function To_String (Pizza : Pizza_Type) return String renames
-       Pizza_Type'Image;
+    function To_String (Pizza : Dish_Type) return String renames
+       Dish_Type'Image;
     function To_String (Ingredient : Ingredient_Type) return String renames
        Ingredient_Type'Image;
     function To_String (Client : Client_Type) return String renames
@@ -38,7 +38,7 @@ procedure Simulation is
             Accepted   :    out Boolean);
         -- Cook and deliver a pizza provided there are enough ingredients for it
         entry Deliver
-           (Pizza    : in     Pizza_Type; Number : out Natural;
+           (Pizza    : in     Dish_Type; Number : out Natural;
             Accepted :    out Boolean);
     end Fridge_Task_Type;
 
@@ -104,7 +104,7 @@ procedure Simulation is
         Pizza_Generator : Random_Pizza.Generator;
         Client_Name     : Client_Type;
         Counter         : Natural;
-        Pizza           : Pizza_Type;
+        Pizza           : Dish_Type;
         Accepted        : Boolean;
     begin
         accept Start (Client : in Client_Type) do
@@ -133,7 +133,7 @@ procedure Simulation is
         Storage_Capacity : constant Positive := 50;
         type Storage_type is array (Ingredient_Type) of Natural;
         Storage                : Storage_type := (others => 0);
-        Pizza_Recipes : array (Pizza_Type, Ingredient_Type) of Natural :=
+        Pizza_Recipes : array (Dish_Type, Ingredient_Type) of Natural :=
            (Margherita  => (Dough => 1, Cheese => 1, Tomato => 1, others => 0),
             Capriciosa  =>
                (Dough => 1, Cheese => 1, Ham => 2, Mushrooms => 2, Tomato => 2,
@@ -147,14 +147,14 @@ procedure Simulation is
                (Dough  => 1, Cheese => 1, Mushrooms => 2, Tomato => 2,
                 others => 0));
         Max_Ingredient_Content : array (Ingredient_Type) of Natural;
-        Counters : array (Pizza_Type) of Natural := (others => 1);
+        Counters : array (Dish_Type) of Natural := (others => 1);
         Ingredients_In_Storage : Natural := 0;
 
         procedure Setup_Variables is
         begin
             for Ingredient in Ingredient_Type loop
                 Max_Ingredient_Content (Ingredient) := 0;
-                for Pizza in Pizza_Type loop
+                for Pizza in Dish_Type loop
                     if Pizza_Recipes (Pizza, Ingredient) >
                        Max_Ingredient_Content (Ingredient)
                     then
@@ -204,7 +204,7 @@ procedure Simulation is
             end if;
         end Can_Accept;
 
-        function Can_Deliver (Pizza : Pizza_Type) return Boolean is
+        function Can_Deliver (Pizza : Dish_Type) return Boolean is
         begin
             for I in Ingredient_Type loop
                 if Storage (I) < Pizza_Recipes (Pizza, I) then
@@ -273,7 +273,7 @@ procedure Simulation is
                 end Insert;
             or
                 accept Deliver
-                   (Pizza    : in     Pizza_Type; Number : out Natural;
+                   (Pizza    : in     Dish_Type; Number : out Natural;
                     Accepted :    out Boolean)
                 do
                     if Can_Deliver (Pizza) then
