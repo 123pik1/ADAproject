@@ -1,0 +1,5 @@
+gnatmake fromzero.adb
+rm fromzero.ali
+rm fromzero.o
+./fromzero
+rm fromzero

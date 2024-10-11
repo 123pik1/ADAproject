@@ -1,5 +1,0 @@
-gnatmake simulationZRepo.adb
-rm simulationZRepo.ali
-rm simulationZRepo.o
-./simulationZRepo
-rm simulation
