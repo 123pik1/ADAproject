@@ -196,40 +196,48 @@ procedure Simulation is
          Put_Line("|   Number of Ingredients in storage: " & Integer'Image(In_Storage));
 
       end Storage_Contents;
-
+      
    begin
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       Setup_Variables;
       loop
-         accept Take(Ingredient: in Ingredient_Type; Number: in Integer) do
-            if Can_Accept(Ingredient) then
-               Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
-                          Integer'Image(Number)& ESC & "[0m");
-               Storage(Ingredient) := Storage(Ingredient) + 1;
-               In_Storage := In_Storage + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
-                          Integer'Image(Number)& ESC & "[0m");
-            end if;
-         end Take;
-         Storage_Contents;
-
-         accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
-            if Can_Deliver(Assembly) then
-               Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
-                          Integer'Image(Assembly_Number(Assembly))& ESC & "[0m");
-               for W in Ingredient_Type loop
-                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-                  In_Storage := In_Storage - Assembly_Content(Assembly, W);
-               end loop;
-               Number := Assembly_Number(Assembly);
-               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Lacking Ingredients for dish " & Assembly_Name(Assembly)& ESC & "[0m");
-               Number := 0;
-            end if;
-         end Deliver;
-         Storage_Contents;
+         
+         select
+            accept Take(Ingredient: in Ingredient_Type; Number: in Integer) do
+               if Can_Accept(Ingredient) then
+                  Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
+                             Integer'Image(Number)& ESC & "[0m");
+                  Storage(Ingredient) := Storage(Ingredient) + 1;
+                  In_Storage := In_Storage + 1;
+               else
+                  Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
+                             Integer'Image(Number)& ESC & "[0m");
+               end if;
+            end Take;
+            Storage_Contents;
+         or
+            accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
+               if Can_Deliver(Assembly) then
+                  Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
+                             Integer'Image(Assembly_Number(Assembly))& ESC & "[0m");
+                  for W in Ingredient_Type loop
+                     Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                     In_Storage := In_Storage - Assembly_Content(Assembly, W);
+                  end loop;
+                  Number := Assembly_Number(Assembly);
+                  Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+               else
+                  Put_Line(ESC & "[91m" & "B: Lacking Ingredients for dish " & Assembly_Name(Assembly)& ESC & "[0m");
+                  Number := 0;
+               end if;
+            end Deliver;
+            Storage_Contents;
+         or
+            delay 1.0; --wejdzie tu jak w ciagu 1 sek nie dostanie Buffer Take albo Buffer Deliver, potem select jest od nowa
+            Put_Line(".........Jestem w select or delay 1.0......."); 
+            delay 10.0;
+            Put_Line("Odczekalem 10sek delayu w select or delay 1.0.....zaczynam selecta od nowa");
+         end select;
 
       end loop;
    end Buffer;
