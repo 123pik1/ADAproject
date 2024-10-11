@@ -130,6 +130,7 @@ procedure Simulation is
       end Start;
       Put_Line(ESC & "[96m" & "C: Eater named " & Consumer_Name(Consumer_Nb)  & " enters restaurant");
       loop
+      select
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
          Dish_Type := Random_Assembly.Random(GA);
          -- take an assembly for consumption
@@ -137,6 +138,15 @@ procedure Simulation is
          Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes dish " &
                     Assembly_Name(Dish_Type) & " number " &
                     Integer'Image(Assembly_Number) & ESC & "[0m");
+         or 
+         accept Start(Consumer_Number: in Consumer_Type;
+                      Consumption_Time: in Integer) do
+            Random_Consumption.Reset(G);
+            Random_Assembly.Reset(GA);
+            Consumer_Nb := Consumer_Number;
+            Consumption := Consumption_Time;
+         end Start;
+      end select;
       end loop;
    end Consumer;
 
