@@ -6,11 +6,11 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 procedure SimulationZRepo is
     type Ingredient_Type is
-       (Dough, Cheese, Ham, Mushrooms, Tomato, Pepper, Pineapple);
+       (Potato, Cheese, Ham, Mushrooms, Tomato, Pepper, Pineapple);
     type Dish_Type is
-       (Margherita, Hawaii, Capriciosa, Pepperoni, Vegetariana);
+       (Steak, Hamburger, Bolognese, Pepperoni, Vegetariana);
     type Client_Type is (Student, Professor, Dean);
-    package Random_Pizza is new Ada.Numerics.Discrete_Random (Dish_Type);
+    package Random_Dish is new Ada.Numerics.Discrete_Random (Dish_Type);
 
     function To_String (Dish : Dish_Type) return String renames
        Dish_Type'Image;
@@ -31,7 +31,7 @@ procedure SimulationZRepo is
     end Client_Task_Type;
 
     -- In the Fridge, ingredients are cooked into pizzas
-    task type Fridge_Task_Type is
+    task type Cooker_Task_Type is
         -- Accept a ingredient to the storage provided there is a room for it
         entry Insert
            (Ingredient : in     Ingredient_Type; Number : in Natural;
@@ -40,11 +40,11 @@ procedure SimulationZRepo is
         entry Deliver
            (Pizza    : in     Dish_Type; Number : out Natural;
             Accepted :    out Boolean);
-    end Fridge_Task_Type;
+    end Cooker_Task_Type;
 
     Supplier_Tasks : array (Ingredient_Type) of Supplier_Task_Type;
     Client_Tasks   : array (Client_Type) of Client_Task_Type;
-    Fridge_Task    : Fridge_Task_Type;
+    Fridge_Task    : Cooker_Task_Type;
 
     procedure Log (Logger : String; Message : String; Highlight: Boolean := False) is
         Offset : String (1 .. 25 - Logger'Length) := (others => ' ');
@@ -101,7 +101,7 @@ procedure SimulationZRepo is
         package Random_Consumption is new Ada.Numerics.Discrete_Random
            (Consumption_Time_Range_Millis);
         Time_Generator  : Random_Consumption.Generator;
-        Pizza_Generator : Random_Pizza.Generator;
+        Dish_Generator : Random_Dish.Generator;
         Client_Name     : Client_Type;
         Counter         : Natural;
         Pizza           : Dish_Type;
@@ -109,14 +109,14 @@ procedure SimulationZRepo is
     begin
         accept Start (Client : in Client_Type) do
             Random_Consumption.Reset (Time_Generator);
-            Random_Pizza.Reset (Pizza_Generator);
+            Random_Dish.Reset (Dish_Generator);
             Client_Name := Client;
         end Start;
         Log ("Client " & To_String (Client_Name), "Started client");
         loop
             delay Duration
                (Float (Random_Consumption.Random (Time_Generator)) / 1_000.0);
-            Pizza := Random_Pizza.Random (Pizza_Generator);
+            Pizza := Random_Dish.Random (Dish_Generator);
             Fridge_Task.Deliver (Pizza, Counter, Accepted);
             if Accepted then
                 Log ("Client " & To_String (Client_Name),
@@ -129,22 +129,22 @@ procedure SimulationZRepo is
         end loop;
     end Client_Task_Type;
 
-    task body Fridge_Task_Type is
+    task body Cooker_Task_Type is
         Storage_Capacity : constant Positive := 50;
         type Storage_type is array (Ingredient_Type) of Natural;
         Storage                : Storage_type := (others => 0);
-        Pizza_Recipes : array (Dish_Type, Ingredient_Type) of Natural :=
-           (Margherita  => (Dough => 1, Cheese => 1, Tomato => 1, others => 0),
-            Capriciosa  =>
-               (Dough => 1, Cheese => 1, Ham => 2, Mushrooms => 2, Tomato => 2,
+        Dish_Recipes : array (Dish_Type, Ingredient_Type) of Natural :=
+           (Steak  => (Potato => 1, Cheese => 1, Tomato => 1, others => 0),
+            Bolognese  =>
+               (Potato => 1, Cheese => 1, Ham => 2, Mushrooms => 2, Tomato => 2,
                 others => 0),
-            Hawaii      =>
-               (Dough => 1, Cheese => 1, Ham => 1, Pineapple => 1, Tomato => 1,
+            Hamburger      =>
+               (Potato => 1, Cheese => 1, Ham => 1, Pineapple => 1, Tomato => 1,
                 others => 0),
             Pepperoni   =>
-               (Dough => 1, Cheese => 1, Pepper => 3, Ham => 1, others => 0),
+               (Potato => 1, Cheese => 1, Pepper => 3, Ham => 1, others => 0),
             Vegetariana =>
-               (Dough  => 1, Cheese => 1, Mushrooms => 2, Tomato => 2,
+               (Potato  => 1, Cheese => 1, Mushrooms => 2, Tomato => 2,
                 others => 0));
         Max_Ingredient_Content : array (Ingredient_Type) of Natural;
         Counters : array (Dish_Type) of Natural := (others => 1);
@@ -155,11 +155,11 @@ procedure SimulationZRepo is
             for Ingredient in Ingredient_Type loop
                 Max_Ingredient_Content (Ingredient) := 0;
                 for Pizza in Dish_Type loop
-                    if Pizza_Recipes (Pizza, Ingredient) >
+                    if Dish_Recipes (Pizza, Ingredient) >
                        Max_Ingredient_Content (Ingredient)
                     then
                         Max_Ingredient_Content (Ingredient) :=
-                           Pizza_Recipes (Pizza, Ingredient);
+                           Dish_Recipes (Pizza, Ingredient);
                     end if;
                 end loop;
             end loop;
@@ -204,10 +204,10 @@ procedure SimulationZRepo is
             end if;
         end Can_Accept;
 
-        function Can_Deliver (Pizza : Dish_Type) return Boolean is
+        function Can_Deliver (Dish : Dish_Type) return Boolean is
         begin
             for I in Ingredient_Type loop
-                if Storage (I) < Pizza_Recipes (Pizza, I) then
+                if Storage (I) < Dish_Recipes (Dish, I) then
                     return False;
                 end if;
             end loop;
@@ -230,7 +230,7 @@ procedure SimulationZRepo is
             type Maximal_Ingredient_Count_Type is
                array (Ingredient_Type) of Natural;
             Maximal_Ingredient_Count : Maximal_Ingredient_Count_Type :=
-               (Dough => 9, Cheese => 9, Ham => 9, Tomato => 9, others => 6);
+               (Potato => 9, Cheese => 9, Ham => 9, Tomato => 9, others => 6);
             Remove_Count             : Integer;
         begin
             for Ingredient in Ingredient_Type loop
@@ -282,10 +282,10 @@ procedure SimulationZRepo is
                         for Ingredient in Ingredient_Type loop
                             Storage (Ingredient)   :=
                                Storage (Ingredient) -
-                               Pizza_Recipes (Pizza, Ingredient);
+                               Dish_Recipes (Pizza, Ingredient);
                             Ingredients_In_Storage :=
                                Ingredients_In_Storage -
-                               Pizza_Recipes (Pizza, Ingredient);
+                               Dish_Recipes (Pizza, Ingredient);
                         end loop;
                         Number           := Counters (Pizza);
                         Counters (Pizza) := Counters (Pizza) + 1;
@@ -298,7 +298,7 @@ procedure SimulationZRepo is
                 end Deliver;
             end select;
         end loop;
-    end Fridge_Task_Type;
+    end Cooker_Task_Type;
 
 begin
     for Ingredient in Ingredient_Type loop
