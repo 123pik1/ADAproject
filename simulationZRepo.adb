@@ -4,15 +4,15 @@ with Ada.Integer_Text_IO;
 with Ada.Numerics.Discrete_Random;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
-procedure Simulation is
+procedure SimulationZRepo is
     type Ingredient_Type is
        (Dough, Cheese, Ham, Mushrooms, Tomato, Pepper, Pineapple);
     type Dish_Type is
-       (Margherita, Capriciosa, Hawaii, Pepperoni, Vegetariana);
+       (Margherita, Hawaii, Capriciosa, Pepperoni, Vegetariana);
     type Client_Type is (Student, Professor, Dean);
     package Random_Pizza is new Ada.Numerics.Discrete_Random (Dish_Type);
 
-    function To_String (Pizza : Dish_Type) return String renames
+    function To_String (Dish : Dish_Type) return String renames
        Dish_Type'Image;
     function To_String (Ingredient : Ingredient_Type) return String renames
        Ingredient_Type'Image;
@@ -307,4 +307,4 @@ begin
     for Client in Client_Type loop
         Client_Tasks (Client).Start (Client);
     end loop;
-end Simulation;
+end SimulationZRepo;
