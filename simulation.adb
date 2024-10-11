@@ -1,4 +1,3 @@
--- A skeleton of an ADA program for an assignment in programming languages
 
 --Autorzy:
 --Paweł Rietz
@@ -30,34 +29,34 @@ procedure Simulation is
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
 
 
-   --each Producer is assigned a Product that it produces
-   Product_Name: constant array (Ingredient_Type) of String(1 .. 7)
-      := ("Pastani", "Potaton", "Tomaton", "Chicken", "Porknig");
+   --each Producer is assigned a Ingredient that it produces
+   Ingredient_Name: constant array (Ingredient_Type) of String(1 .. 7)
+      := ("Pasta  ", "Potato ", "Tomato ", "Chicken", "Pork   ");
 
-   --Assembly is a collection of products
+   --Assembly is a collection of Ingredients
    Assembly_Name: constant array (Dish_Type) of String(1 .. 9)
-     := ("Bolognes ", "Steak    ", "Hamburger");   
+     := ("Bolognese", "Steak    ", "Hamburger");   
 
 
    ----TASK DECLARATIONS----
 
-   -- Producer produces determined product
+   -- Producer produces determined Ingredient
    task type Producer is
-      entry Start(Product: in Ingredient_Type; Production_Time: in Integer);
+      entry Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer);
    end Producer;
 
-   -- Consumer gets an arbitrary assembly of several products from the buffer
+   -- Consumer gets an arbitrary assembly of several Ingredients from the buffer
    -- but he/she orders it randomly
    task type Consumer is
       entry Start(Consumer_Number: in Consumer_Type;
                   Consumption_Time: in Integer);
    end Consumer;
 
-   -- Buffer receives products from Producers and delivers Assemblies to Consumers
+   -- Buffer receives Ingredients from Producers and delivers Assemblies to Consumers
    task type Buffer is
-      -- Accept a product to the storage (provided there is a room for it)
-      entry Take(Product: in Ingredient_Type; Number: in Integer);
-      -- Deliver an assembly (provided there are enough products for it)
+      -- Accept a Ingredient to the storage (provided there is a room for it)
+      entry Take(Ingredient: in Ingredient_Type; Number: in Integer);
+      -- Deliver an assembly (provided there are enough Ingredients for it)
       entry Deliver(Assembly: in Dish_Type; Number: out Integer);
    end Buffer;
 
@@ -71,31 +70,31 @@ procedure Simulation is
    --Producer--
 
    task body Producer is
-      subtype Production_Time_Range is Integer range 1 .. 3;
-      package Random_Production is new Ada.Numerics.Discrete_Random(Production_Time_Range);
+      subtype Cooking_Time_Range is Integer range 1 .. 3;
+      package Random_Ingrediention is new Ada.Numerics.Discrete_Random(Cooking_Time_Range);
       --  random number generator
-      G: Random_Production.Generator;
+      G: Random_Ingrediention.Generator;
       Ingredient_Type_Number: Integer;
-      Product_Number: Integer;
-      Production: Integer;
+      Ingredient_Number: Integer;
+      Ingrediention: Integer;
       Random_Time: Duration;
    begin
-      accept Start(Product: in Ingredient_Type; Production_Time: in Integer) do
+      accept Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer) do
          --  start random number generator
-         Random_Production.Reset(G);
-         Product_Number := 1;
-         Ingredient_Type_Number := Product;
-         Production := Production_Time;
+         Random_Ingrediention.Reset(G);
+         Ingredient_Number := 1;
+         Ingredient_Type_Number := Ingredient;
+         Ingrediention := Cooking_Time;
       end Start;
-      Put_Line(ESC & "[93m" & "P: Cooker started cooking of " & Product_Name(Ingredient_Type_Number) & ESC & "[0m");
+      Put_Line(ESC & "[93m" & "P: Cooker started cooking of " & Ingredient_Name(Ingredient_Type_Number) & ESC & "[0m");
       loop
-         Random_Time := Duration(Random_Production.Random(G));
+         Random_Time := Duration(Random_Ingrediention.Random(G));
          delay Random_Time;
-         Put_Line(ESC & "[93m" & "P: Cooked product " & Product_Name(Ingredient_Type_Number)
-                  & " number "  & Integer'Image(Product_Number) & ESC & "[0m");
+         Put_Line(ESC & "[93m" & "P: Cooked Ingredient " & Ingredient_Name(Ingredient_Type_Number)
+                  & " number "  & Integer'Image(Ingredient_Number) & ESC & "[0m");
          -- Accept for storage
-         B.Take(Ingredient_Type_Number, Product_Number);
-         Product_Number := Product_Number + 1;
+         B.Take(Ingredient_Type_Number, Ingredient_Number);
+         Ingredient_Number := Ingredient_Number + 1;
       end loop;
    end Producer;
 
@@ -169,7 +168,7 @@ procedure Simulation is
          end loop;
       end Setup_Variables;
 
-      function Can_Accept(Product: Ingredient_Type) return Boolean is
+      function Can_Accept(Ingredient: Ingredient_Type) return Boolean is
       begin
          if In_Storage >= Storage_Capacity then
             return False;
@@ -192,9 +191,9 @@ procedure Simulation is
       begin
          for W in Ingredient_Type loop
             Put_Line("|   Storage contents: " & Integer'Image(Storage(W)) & " "
-                     & Product_Name(W));
+                     & Ingredient_Name(W));
          end loop;
-         Put_Line("|   Number of products in storage: " & Integer'Image(In_Storage));
+         Put_Line("|   Number of Ingredients in storage: " & Integer'Image(In_Storage));
 
       end Storage_Contents;
 
@@ -202,14 +201,14 @@ procedure Simulation is
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       Setup_Variables;
       loop
-         accept Take(Product: in Ingredient_Type; Number: in Integer) do
-            if Can_Accept(Product) then
-               Put_Line(ESC & "[91m" & "B: Accepted product " & Product_Name(Product) & " number " &
+         accept Take(Ingredient: in Ingredient_Type; Number: in Integer) do
+            if Can_Accept(Ingredient) then
+               Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
                           Integer'Image(Number)& ESC & "[0m");
-               Storage(Product) := Storage(Product) + 1;
+               Storage(Ingredient) := Storage(Ingredient) + 1;
                In_Storage := In_Storage + 1;
             else
-               Put_Line(ESC & "[91m" & "B: Rejected product " & Product_Name(Product) & " number " &
+               Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
                           Integer'Image(Number)& ESC & "[0m");
             end if;
          end Take;
@@ -226,7 +225,7 @@ procedure Simulation is
                Number := Assembly_Number(Assembly);
                Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
             else
-               Put_Line(ESC & "[91m" & "B: Lacking products for dish " & Assembly_Name(Assembly)& ESC & "[0m");
+               Put_Line(ESC & "[91m" & "B: Lacking Ingredients for dish " & Assembly_Name(Assembly)& ESC & "[0m");
                Number := 0;
             end if;
          end Deliver;
