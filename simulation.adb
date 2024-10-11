@@ -149,9 +149,10 @@ procedure Simulation is
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
       Assembly_Content: array(Dish_Type, Ingredient_Type) of Integer
-        := ((2, 1, 2, 0, 2),
-            (1, 2, 0, 1, 0),
-            (3, 2, 2, 0, 1));
+        := ((0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0),
+            (0, 0, 0, 0, 0));
+      --TODO set needed ammount of ingredients for each dish
       Max_Assembly_Content: array(Ingredient_Type) of Integer;
       Assembly_Number: array(Dish_Type) of Integer
         := (1, 1, 1);
