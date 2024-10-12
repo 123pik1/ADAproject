@@ -55,7 +55,7 @@ procedure Simulation is
    -- Buffer receives Ingredients from Producers and delivers Assemblies to Consumers
    task type Buffer is
       -- Accept a Ingredient to the storage (provided there is a room for it)
-      entry Take(Ingredient: in Ingredient_Type; Number: in Integer);
+      entry Take(Ingredient: in Ingredient_Type; Number: in Integer; Accepted: out Boolean);
       -- Deliver an assembly (provided there are enough Ingredients for it)
       entry Deliver(Assembly: in Dish_Type; Number: out Integer);
    end Buffer;
@@ -76,8 +76,9 @@ procedure Simulation is
       G: Random_Ingrediention.Generator;
       Ingredient_Type_Number: Integer;
       Ingredient_Number: Integer;
-      Ingrediention: Integer;
+      Ingrediention: Integer; -- kolejna useless zmienna???
       Random_Time: Duration;
+      Accepted_by_Buffer: Boolean;
    begin
       accept Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer) do
          --  start random number generator
@@ -92,9 +93,16 @@ procedure Simulation is
          delay Random_Time;
          Put_Line(ESC & "[93m" & "P: Cooked Ingredient " & Ingredient_Name(Ingredient_Type_Number)
                   & " number "  & Integer'Image(Ingredient_Number) & ESC & "[0m");
+         
          -- Accept for storage
-         B.Take(Ingredient_Type_Number, Ingredient_Number);
-         Ingredient_Number := Ingredient_Number + 1;
+         B.Take(Ingredient_Type_Number, Ingredient_Number, Accepted_by_Buffer);
+         
+         if Accepted_by_Buffer then
+            Ingredient_Number := Ingredient_Number + 1;
+         else
+            Put_Line(ESC & "[93m" & "P: Ingredient " & Ingredient_Name(Ingredient_Type_Number) &
+                  " number " & Integer'Image(Ingredient_Number) & " was rejected by Buffer" & ESC & "[0m");
+         end if;
       end loop;
    end Producer;
 
@@ -114,7 +122,7 @@ procedure Simulation is
       GA: Random_Assembly.Generator;
       Consumer_Nb: Consumer_Type;
       Assembly_Number: Integer;
-      Consumption: Integer;
+      Consumption: Integer; -- useless zmienna xD??
       Dish_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
         of String(1 .. 6)
@@ -131,11 +139,19 @@ procedure Simulation is
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
          Dish_Type := Random_Assembly.Random(GA);
-         -- take an assembly for consumption
+         
+         -- Jesli nie mogl dostac dania to Assembly_number ustawi na 0
          B.Deliver(Dish_Type, Assembly_Number);
-         Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes dish " &
+         
+         if Assembly_Number /= 0 then 
+            Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " takes dish " &
                     Assembly_Name(Dish_Type) & " number " &
-                    Integer'Image(Assembly_Number) & ESC & "[0m");
+                       Integer'Image(Assembly_Number) & ESC & "[0m");
+         else
+            Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Consumer_Nb) & " could not get dish " &
+                       Assembly_Name(Dish_Type) & " due to lack of ingredients" & ESC & "[0m");
+         end if;
+           
       end loop;
    end Consumer;
 
@@ -148,10 +164,10 @@ procedure Simulation is
       Storage: Storage_type
         := (0, 0, 0, 0, 0);
       Assembly_Content: array(Dish_Type, Ingredient_Type) of Integer
-        := ((2, 1, 2, 0, 2),
-            (1, 2, 0, 1, 0),
-            (3, 2, 2, 0, 1));
-      Max_Assembly_Content: array(Ingredient_Type) of Integer;
+        := ((2, 1, 2, 0, 2), --skladniki Bolognese
+            (1, 2, 0, 1, 0), --skladniki Steak
+            (3, 2, 2, 0, 1)); --skladniki Hamburger
+      Max_Assembly_Content: array(Ingredient_Type) of Integer; --tablica przechowujaca max ilosc kazdego skladnika ktora moze byc potrzebna zeby cos ugotowac
       Assembly_Number: array(Dish_Type) of Integer
         := (1, 1, 1);
       In_Storage: Integer := 0;
@@ -168,16 +184,48 @@ procedure Simulation is
          end loop;
       end Setup_Variables;
 
-      function Can_Accept(Ingredient: Ingredient_Type) return Boolean is
+      function Can_Accept(Ingredient: Ingredient_Type) return Boolean is --czy moze przyjac skladnik
+         Free_Space: Integer;
+         Result: Boolean;
+         Lacking: array (Ingredient_Type) of Integer;
+         Lacking_Space: Integer; 
+         
       begin
          if In_Storage >= Storage_Capacity then
             return False;
-         else
+         end if;
+         Free_Space := Storage_Capacity - In_Storage;
+         
+         for I in Ingredient_Type loop -- jesli ilosc kazdego skladnika jest wystarczajaca zeby utworzyc dowolne danie, to funkcja zwraca True
+            if Storage(I) < Max_Assembly_Content(I) then
+               Result := False;
+            end if;
+         end loop;
+         
+         if Result then
             return True;
          end if;
+         
+         if Max_Assembly_Content(Ingredient) > Storage(Ingredient) then
+            return True;
+         end if;
+         
+         -- Oblicza ile miejsca jest potrzebne do przechowania brakujacych skladnikow, ktore sa ponizej swojego maksymalnego limitu
+         Lacking_Space := 1;
+         for I in Ingredient_Type loop 
+            Lacking(I) := Integer'Max (0, Max_Assembly_Content(I) - Storage(I)); -- Integer'Max(0,...) zeby nie pojawilo sie Lacking(I) ujemne
+            Lacking_Space := Lacking_Space + Lacking(I);
+         end loop;
+         
+         if Free_Space >= Lacking_Space then
+            return True;
+         else
+            return False;
+         end if;
+           
       end Can_Accept;
 
-      function Can_Deliver(Assembly: Dish_Type) return Boolean is
+      function Can_Deliver(Assembly: Dish_Type) return Boolean is --czy danie o numerze Assembly moze byc utworzone
       begin
          for W in Ingredient_Type loop
             if Storage(W) < Assembly_Content(Assembly, W) then
@@ -187,7 +235,7 @@ procedure Simulation is
          return True;
       end Can_Deliver;
 
-      procedure Storage_Contents is
+      procedure Storage_Contents is --wypisz zawartosc magazynu
       begin
          for W in Ingredient_Type loop
             Put_Line("|   Storage contents: " & Integer'Image(Storage(W)) & " "
@@ -196,40 +244,63 @@ procedure Simulation is
          Put_Line("|   Number of Ingredients in storage: " & Integer'Image(In_Storage));
 
       end Storage_Contents;
-
+      
+      
+      
    begin
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       Setup_Variables;
       loop
-         accept Take(Ingredient: in Ingredient_Type; Number: in Integer) do
-            if Can_Accept(Ingredient) then
-               Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
-                          Integer'Image(Number)& ESC & "[0m");
-               Storage(Ingredient) := Storage(Ingredient) + 1;
-               In_Storage := In_Storage + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
-                          Integer'Image(Number)& ESC & "[0m");
-            end if;
-         end Take;
-         Storage_Contents;
+         
+         select
+            --przyjmuje lub odrzuca ugotowany skladnik Ingredient
+            accept Take(Ingredient: in Ingredient_Type; Number: in Integer; Accepted: out Boolean) do
+               if Can_Accept(Ingredient) then --przyjeto skladnik
+                  Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
+                             Integer'Image(Number)& ESC & "[0m");
+                  Storage(Ingredient) := Storage(Ingredient) + 1;
+                  In_Storage := In_Storage + 1;
+                  Accepted := True;
+               else --skladnik odrzucony
+                  Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
+                             Integer'Image(Number)& ESC & "[0m");
+                  Accepted := False; 
+               end if;
+            end Take;
+            Storage_Contents;
+         or
+              --(nie)dostarcza wybrane danie Assembly
+            accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
+               if Can_Deliver(Assembly) then
+                  Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
+                             Integer'Image(Assembly_Number(Assembly))& ESC & "[0m");
+                  
 
-         accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
-            if Can_Deliver(Assembly) then
-               Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
-                          Integer'Image(Assembly_Number(Assembly))& ESC & "[0m");
-               for W in Ingredient_Type loop
-                  Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
-                  In_Storage := In_Storage - Assembly_Content(Assembly, W);
-               end loop;
-               Number := Assembly_Number(Assembly);
-               Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
-            else
-               Put_Line(ESC & "[91m" & "B: Lacking Ingredients for dish " & Assembly_Name(Assembly)& ESC & "[0m");
-               Number := 0;
-            end if;
-         end Deliver;
-         Storage_Contents;
+                  for W in Ingredient_Type loop
+                     Storage(W) := Storage(W) - Assembly_Content(Assembly, W);
+                     In_Storage := In_Storage - Assembly_Content(Assembly, W);
+                  end loop;
+                  
+                  -- Zwroc numer dostarczonego dania
+                  Number := Assembly_Number(Assembly);
+                  
+                  -- Zwieksz licznik dla tego typu dania
+                  Assembly_Number(Assembly) := Assembly_Number(Assembly) + 1;
+               else
+                  -- Komunikat o braku skladnikow
+                  Put_Line(ESC & "[91m" & "B: Lacking Ingredients for dish " & Assembly_Name(Assembly)& ESC & "[0m");
+                  
+                  -- Zwroc 0, by oznaczyc, ze nie dostarczono dania
+                  Number := 0;
+               end if;
+            end Deliver;
+            Storage_Contents;
+         or
+            delay 2.0; --wejdzie tu jak w ciagu 1 sek nie dostanie Buffer Take albo Buffer Deliver, potem select jest od nowa
+            Put_Line(".........Jestem w select or delay 1.0......."); 
+            delay 10.0;
+            Put_Line("Odczekalem 10sek delayu w select or delay 1.0.....zaczynam selecta od nowa");
+         end select;
 
       end loop;
    end Buffer;
