@@ -9,6 +9,8 @@ with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Characters.Latin_1; use Ada.Characters.Latin_1;
 with Ada.Integer_Text_IO;
 with Ada.Numerics.Discrete_Random;
+with Ada.Numerics.Float_Random;
+
 
 
 procedure Simulation is
@@ -27,7 +29,7 @@ procedure Simulation is
    subtype Item_Type is Integer range 1 .. Number_Of_Items;
    subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
    subtype Customer_Type is Integer range 1 .. Number_Of_Customers;
-
+   subtype Godness_Type is Integer range 1 .. 10;
 
    --each Producer is assigned an Item to produce
    Item_Name: constant array (Item_Type) of String(1 .. 7)
@@ -69,6 +71,32 @@ procedure Simulation is
 
 
    ----TASK DEFINITIONS----
+
+   --Charity_Event--
+
+   task body Charity_Event is
+   package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
+   G: Random_Godness.Generator;
+   godness_of_heart_level: Godness_Type;
+   begin
+      Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
+   Random_Godness.Reset(G);
+      loop
+      select
+         accept Noble_gift do
+         Put_Line(ESC & "[92m" & "Charity_Event: Noble gift" & ESC & "[0m");
+         end Noble_gift;
+
+         or 
+         delay 1.0;
+         godness_of_heart_level := Random_Godness.Random(G);
+         Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
+         requeue Noble_gift;
+      end select;
+      end loop;
+   end Charity_Event;
+
+
 
    --Producer--
 
@@ -316,20 +344,9 @@ procedure Simulation is
    end Buffer;
 
 
-   task body Charity_Event is
-   begin
-      loop
-      select
-         accept Noble_gift;
-
-         or 
-         delay 20.0;
-         Put_Line(ESC & "[92m" & "Charity_Event: Noble gift" & ESC & "[0m");
-      end select;
-      end loop;
-   end Charity_Event;
-
-
+   
+   Task1 : Charity_Event;
+   
    ---"MAIN" FOR SIMULATION---
 begin
    for I in 1 .. Number_Of_Producers loop
