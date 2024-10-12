@@ -23,7 +23,7 @@ procedure Simulation is
    -- type Dish_Type is
    --    (Bolognes, Steak, Hamburger);
    -- type Consumer_Type is
-   --    (Eater1, Eater2, Eater3);
+   --    (Customer1, Customer2, Customer3);
    subtype Ingredient_Type is Integer range 1 .. Number_Of_Producers;
    subtype Dish_Type is Integer range 1 .. Number_Of_Dishes;
    subtype Consumer_Type is Integer range 1 .. Number_Of_Consumers;
@@ -31,18 +31,21 @@ procedure Simulation is
 
    --each Producer is assigned a Ingredient that it produces
    Ingredient_Name: constant array (Ingredient_Type) of String(1 .. 7)
-      := ("Pasta  ", "Potato ", "Tomato ", "Chicken", "Pork   ");
+      := ("Pasta  ", "Buns   ", "Tomato ", "Beef   ", "Fries  ");
 
-   --Assembly is a collection of Ingredients
+   --Assembly is a collection of Ingredients (It's best if the ingredients overlap, so there's less risk of a softlock)
    Assembly_Name: constant array (Dish_Type) of String(1 .. 9)
-     := ("Bolognese", "Steak    ", "Hamburger");   
-
+     := ("Bolognese", "Steak    ", "Hamburger");
+   -- INGREDIENTS :    
+   -- Bolognese: Pasta, Beef, Tomato
+   -- Steak: Beef, Fries
+   -- Hamburger: Buns, Tomato, Beef, Fries 
 
    ----TASK DECLARATIONS----
 
    -- Producer produces determined Ingredient
    task type Producer is
-      entry Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer);
+      entry Start(Ingredient: in Ingredient_Type; Production_Time: in Integer);
    end Producer;
 
    -- Consumer gets an arbitrary assembly of several Ingredients from the buffer
@@ -70,8 +73,8 @@ procedure Simulation is
    --Producer--
 
    task body Producer is
-      subtype Cooking_Time_Range is Integer range 1 .. 3;
-      package Random_Ingrediention is new Ada.Numerics.Discrete_Random(Cooking_Time_Range);
+      subtype Production_Time_Range is Integer range 1 .. 3;
+      package Random_Ingrediention is new Ada.Numerics.Discrete_Random(Production_Time_Range);
       --  random number generator
       G: Random_Ingrediention.Generator;
       Ingredient_Type_Number: Integer;
@@ -80,18 +83,18 @@ procedure Simulation is
       Random_Time: Duration;
       Accepted_by_Buffer: Boolean;
    begin
-      accept Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer) do
+      accept Start(Ingredient: in Ingredient_Type; Production_Time: in Integer) do
          --  start random number generator
          Random_Ingrediention.Reset(G);
          Ingredient_Number := 1;
          Ingredient_Type_Number := Ingredient;
-         Ingrediention := Cooking_Time;
+         Ingrediention := Production_Time;
       end Start;
-      Put_Line(ESC & "[93m" & "P: Cooker started cooking of " & Ingredient_Name(Ingredient_Type_Number) & ESC & "[0m");
+      Put_Line(ESC & "[93m" & "P: Started production of: " & Ingredient_Name(Ingredient_Type_Number) & ESC & "[0m");
       loop
          Random_Time := Duration(Random_Ingrediention.Random(G));
          delay Random_Time;
-         Put_Line(ESC & "[93m" & "P: Cooked Ingredient " & Ingredient_Name(Ingredient_Type_Number)
+         Put_Line(ESC & "[93m" & "P: Produced Ingredient " & Ingredient_Name(Ingredient_Type_Number)
                   & " number "  & Integer'Image(Ingredient_Number) & ESC & "[0m");
          
          -- Accept for storage
@@ -126,7 +129,7 @@ procedure Simulation is
       Dish_Type: Integer;
       Consumer_Name: constant array (1 .. Number_Of_Consumers)
         of String(1 .. 6)
-        := ("Eater1", "Eater2", "Eater3");
+        := ("Customer1", "Customer2", "Customer3");
    begin
       accept Start(Consumer_Number: in Consumer_Type;
                    Consumption_Time: in Integer) do
@@ -135,7 +138,7 @@ procedure Simulation is
          Consumer_Nb := Consumer_Number;
          Consumption := Consumption_Time;
       end Start;
-      Put_Line(ESC & "[96m" & "C: Eater named " & Consumer_Name(Consumer_Nb)  & " enters restaurant");
+      Put_Line(ESC & "[96m" & "C: Customer named " & Consumer_Name(Consumer_Nb)  & " enters restaurant");
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
          Dish_Type := Random_Assembly.Random(GA);
