@@ -167,7 +167,7 @@ procedure Simulation is
         := ((2, 1, 2, 0, 2), --skladniki Bolognese
             (1, 2, 0, 1, 0), --skladniki Steak
             (3, 2, 2, 0, 1)); --skladniki Hamburger
-      Max_Assembly_Content: array(Ingredient_Type) of Integer;
+      Max_Assembly_Content: array(Ingredient_Type) of Integer; --tablica przechowujaca max ilosc kazdego skladnika ktora moze byc potrzebna zeby cos ugotowac
       Assembly_Number: array(Dish_Type) of Integer
         := (1, 1, 1);
       In_Storage: Integer := 0;
@@ -184,7 +184,7 @@ procedure Simulation is
          end loop;
       end Setup_Variables;
 
-      function Can_Accept(Ingredient: Ingredient_Type) return Boolean is
+      function Can_Accept(Ingredient: Ingredient_Type) return Boolean is --czy moze przyjac skladnik
       begin
          if In_Storage >= Storage_Capacity then
             return False;
@@ -193,7 +193,7 @@ procedure Simulation is
          end if;
       end Can_Accept;
 
-      function Can_Deliver(Assembly: Dish_Type) return Boolean is
+      function Can_Deliver(Assembly: Dish_Type) return Boolean is --czy danie o numerze Assembly moze byc utworzone
       begin
          for W in Ingredient_Type loop
             if Storage(W) < Assembly_Content(Assembly, W) then
@@ -203,7 +203,7 @@ procedure Simulation is
          return True;
       end Can_Deliver;
 
-      procedure Storage_Contents is
+      procedure Storage_Contents is --wypisz zawartosc magazynu
       begin
          for W in Ingredient_Type loop
             Put_Line("|   Storage contents: " & Integer'Image(Storage(W)) & " "
@@ -221,6 +221,7 @@ procedure Simulation is
       loop
          
          select
+            --przyjmuje lub odrzuca ugotowany skladnik Ingredient
             accept Take(Ingredient: in Ingredient_Type; Number: in Integer; Accepted: out Boolean) do
                if Can_Accept(Ingredient) then --przyjeto skladnik
                   Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
@@ -236,6 +237,7 @@ procedure Simulation is
             end Take;
             Storage_Contents;
          or
+              --(nie)dostarcza wybrane danie Assembly
             accept Deliver(Assembly: in Dish_Type; Number: out Integer) do
                if Can_Deliver(Assembly) then
                   Put_Line(ESC & "[91m" & "B: Delivered dish " & Assembly_Name(Assembly) & " number " &
