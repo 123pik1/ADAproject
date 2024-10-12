@@ -185,12 +185,44 @@ procedure Simulation is
       end Setup_Variables;
 
       function Can_Accept(Ingredient: Ingredient_Type) return Boolean is --czy moze przyjac skladnik
+         Free_Space: Integer;
+         Result: Boolean;
+         Lacking: array (Ingredient_Type) of Integer;
+         Lacking_Space: Integer; 
+         
       begin
          if In_Storage >= Storage_Capacity then
             return False;
-         else
+         end if;
+         Free_Space := Storage_Capacity - In_Storage;
+         
+         for I in Ingredient_Type loop -- jesli ilosc kazdego skladnika jest wystarczajaca zeby utworzyc dowolne danie, to funkcja zwraca True
+            if Storage(I) < Max_Assembly_Content(I) then
+               Result := False;
+            end if;
+         end loop;
+         
+         if Result then
             return True;
          end if;
+         
+         if Max_Assembly_Content(Ingredient) > Storage(Ingredient) then
+            return True;
+         end if;
+         
+         -- Oblicza ile miejsca jest potrzebne do przechowania brakujacych skladnikow, ktore sa ponizej swojego maksymalnego limitu
+         Lacking_Space := 1;
+         for I in Ingredient_Type loop 
+            Lacking(I) := Integer'Max (0, Max_Assembly_Content(I) - Storage(I)); -- Integer'Max(0,...) zeby nie pojawilo sie Lacking(I) ujemne
+            Lacking_Space := Lacking_Space + Lacking(I);
+         end loop;
+         
+         if Free_Space >= Lacking_Space then
+            return True;
+         else
+            return False;
+         end if;
+           
       end Can_Accept;
 
       function Can_Deliver(Assembly: Dish_Type) return Boolean is --czy danie o numerze Assembly moze byc utworzone
