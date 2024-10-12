@@ -51,6 +51,10 @@ procedure Simulation is
                   Consumption_Time: in Integer);
    end Customer;
 
+   task type Charity_Event is
+      entry Noble_gift;
+   end Charity_Event;
+
    -- Buffer receives Items from Producers and delivers Assemblies to Customers
    task type Buffer is
       -- Accept a Item to the storage (provided there is room for it)
@@ -311,6 +315,19 @@ procedure Simulation is
       end loop;
    end Buffer;
 
+
+   task body Charity_Event is
+   begin
+      loop
+      select
+         accept Noble_gift;
+
+         or 
+         delay 20.0;
+         Put_Line(ESC & "[92m" & "Charity_Event: Noble gift" & ESC & "[0m");
+      end select;
+      end loop;
+   end Charity_Event;
 
 
    ---"MAIN" FOR SIMULATION---
