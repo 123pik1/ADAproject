@@ -55,6 +55,7 @@ procedure Simulation is
 
    task type Charity_Event is
       entry Noble_gift;
+      entry Start;
    end Charity_Event;
 
    -- Buffer receives Items from Producers and delivers Assemblies to Customers
@@ -78,20 +79,32 @@ procedure Simulation is
    package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
    G: Random_Godness.Generator;
    godness_of_heart_level: Godness_Type;
+
+   procedure Complete_Noble_Gift is
+   begin
+      for I in 1 .. Number_Of_Producers loop
+         Storage(I) := Storage(I) /2;
+      end loop;
+      Put_Line(ESC & "[92m" & "Charity_Event: Noble gift completed" & ESC & "[0m");
+   end Complete_Noble_Gift;
    begin
       Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
    Random_Godness.Reset(G);
       loop
       select
          accept Noble_gift do
-         Put_Line(ESC & "[92m" & "Charity_Event: Noble gift" & ESC & "[0m");
+         Complete_Noble_Gift; --funkcja ktora wykonuje sie po otrzymaniu Noble_gift
          end Noble_gift;
 
          or 
-         delay 1.0;
+         accept Start do
+         delay 10.0;
          godness_of_heart_level := Random_Godness.Random(G);
          Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
-         requeue Noble_gift;
+         if godness_of_heart_level >7 then
+         requeue Noble_gift; --requeue do samego siebie
+         end if;
+         end Start;
       end select;
       end loop;
    end Charity_Event;
@@ -349,6 +362,7 @@ procedure Simulation is
    
    ---"MAIN" FOR SIMULATION---
 begin
+   Task1.Start;
    for I in 1 .. Number_Of_Producers loop
       P(I).Start(I, 10);
    end loop;
