@@ -55,7 +55,7 @@ procedure Simulation is
    -- Buffer receives Ingredients from Producers and delivers Assemblies to Consumers
    task type Buffer is
       -- Accept a Ingredient to the storage (provided there is a room for it)
-      entry Take(Ingredient: in Ingredient_Type; Number: in Integer);
+      entry Take(Ingredient: in Ingredient_Type; Number: in Integer; Accepted: out Boolean);
       -- Deliver an assembly (provided there are enough Ingredients for it)
       entry Deliver(Assembly: in Dish_Type; Number: out Integer);
    end Buffer;
@@ -76,8 +76,9 @@ procedure Simulation is
       G: Random_Ingrediention.Generator;
       Ingredient_Type_Number: Integer;
       Ingredient_Number: Integer;
-      Ingrediention: Integer;
+      Ingrediention: Integer; -- kolejna useless zmienna???
       Random_Time: Duration;
+      Accepted_by_Buffer: Boolean;
    begin
       accept Start(Ingredient: in Ingredient_Type; Cooking_Time: in Integer) do
          --  start random number generator
@@ -92,9 +93,16 @@ procedure Simulation is
          delay Random_Time;
          Put_Line(ESC & "[93m" & "P: Cooked Ingredient " & Ingredient_Name(Ingredient_Type_Number)
                   & " number "  & Integer'Image(Ingredient_Number) & ESC & "[0m");
+         
          -- Accept for storage
-         B.Take(Ingredient_Type_Number, Ingredient_Number);
-         Ingredient_Number := Ingredient_Number + 1;
+         B.Take(Ingredient_Type_Number, Ingredient_Number, Accepted_by_Buffer);
+         
+         if Accepted_by_Buffer then
+            Ingredient_Number := Ingredient_Number + 1;
+         else
+            Put_Line(ESC & "[93m" & "P: Ingredient " & Ingredient_Name(Ingredient_Type_Number) &
+                  " number " & Integer'Image(Ingredient_Number) & " was rejected by Buffer" & ESC & "[0m");
+         end if;
       end loop;
    end Producer;
 
@@ -131,7 +139,8 @@ procedure Simulation is
       loop
          delay Duration(Random_Consumption.Random(G)); --  simulate consumption
          Dish_Type := Random_Assembly.Random(GA);
-         -- take an assembly for consumption
+         
+         -- Jesli nie mogl dostac dania to Assembly_number ustawi na 0
          B.Deliver(Dish_Type, Assembly_Number);
          
          if Assembly_Number /= 0 then 
@@ -212,15 +221,17 @@ procedure Simulation is
       loop
          
          select
-            accept Take(Ingredient: in Ingredient_Type; Number: in Integer) do
-               if Can_Accept(Ingredient) then
+            accept Take(Ingredient: in Ingredient_Type; Number: in Integer; Accepted: out Boolean) do
+               if Can_Accept(Ingredient) then --przyjeto skladnik
                   Put_Line(ESC & "[91m" & "B: Accepted Ingredient " & Ingredient_Name(Ingredient) & " number " &
                              Integer'Image(Number)& ESC & "[0m");
                   Storage(Ingredient) := Storage(Ingredient) + 1;
                   In_Storage := In_Storage + 1;
-               else
+                  Accepted := True;
+               else --skladnik odrzucony
                   Put_Line(ESC & "[91m" & "B: Rejected Ingredient " & Ingredient_Name(Ingredient) & " number " &
                              Integer'Image(Number)& ESC & "[0m");
+                  Accepted := False; 
                end if;
             end Take;
             Storage_Contents;
