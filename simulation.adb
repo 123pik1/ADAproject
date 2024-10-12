@@ -53,10 +53,7 @@ procedure Simulation is
                   Consumption_Time: in Integer);
    end Customer;
 
-   task type Charity_Event is
-      entry Noble_gift;
-      entry Start;
-   end Charity_Event;
+
 
    -- Buffer receives Items from Producers and delivers Assemblies to Customers
    task type Buffer is
@@ -73,41 +70,7 @@ procedure Simulation is
 
    ----TASK DEFINITIONS----
 
-   --Charity_Event--
-
-   task body Charity_Event is
-   package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
-   G: Random_Godness.Generator;
-   godness_of_heart_level: Godness_Type;
-
-   procedure Complete_Noble_Gift is
-   begin
-      for I in 1 .. Number_Of_Producers loop
-         Storage(I) := Storage(I) /2;
-      end loop;
-      Put_Line(ESC & "[92m" & "Charity_Event: Noble gift completed" & ESC & "[0m");
-   end Complete_Noble_Gift;
-   begin
-      Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
-   Random_Godness.Reset(G);
-      loop
-      select
-         accept Noble_gift do
-         Complete_Noble_Gift; --funkcja ktora wykonuje sie po otrzymaniu Noble_gift
-         end Noble_gift;
-
-         or 
-         accept Start do
-         delay 10.0;
-         godness_of_heart_level := Random_Godness.Random(G);
-         Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
-         if godness_of_heart_level >7 then
-         requeue Noble_gift; --requeue do samego siebie
-         end if;
-         end Start;
-      end select;
-      end loop;
-   end Charity_Event;
+   
 
 
 
@@ -203,6 +166,10 @@ procedure Simulation is
    --Buffer--
 
    task body Buffer is
+      task type Charity_Event is
+      entry Noble_gift;
+      entry Start;
+      end Charity_Event;
       Storage_Capacity: constant Integer := 30;
       type Storage_type is array (Item_Type) of Integer;
       Storage: Storage_type
@@ -211,7 +178,7 @@ procedure Simulation is
         := ((1, 0, 2, 1, 0), --skladniki Bolognese
             (0, 0, 0, 3, 1), --skladniki Steak
             (0, 2, 1, 1, 1)); --skladniki Hamburger
-      
+      Noble : Charity_Event; -- deklaracja Charity_Event
       -- 1-Pasta 2-Buns 3-Tomato 4-Beef 5-Fries
       -- RECIPES :    
       -- Bolognese: 1 Pasta, 1 Beef, 2 Tomato
@@ -225,6 +192,7 @@ procedure Simulation is
 
       procedure Setup_Variables is
       begin
+         Noble.Start; --uruchomienie Charity_Event
          for W in Item_Type loop
             Max_Assembly_Content(W) := 0;
             for Z in Assembly_Type loop
@@ -297,7 +265,50 @@ procedure Simulation is
       end Storage_Contents;
       
       
-      
+      --Charity_Event--
+
+   task body Charity_Event is
+   package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
+   G: Random_Godness.Generator;
+   godness_of_heart_level: Godness_Type;
+
+   procedure Complete_Noble_Gift is
+   begin
+      for I in 1 .. Number_Of_Producers loop
+         Storage(I) := Storage(I) /2;
+      end loop;
+      Put_Line(ESC & "[92m" & "Charity_Event: Resources distributed" & ESC & "[0m");
+   end Complete_Noble_Gift;
+   begin
+      Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
+   Random_Godness.Reset(G);
+      loop
+      select
+         accept Noble_gift do
+         Complete_Noble_Gift; --funkcja ktora wykonuje sie po otrzymaniu Noble_gift
+         requeue Start; --requeue do samego siebie
+         end Noble_gift;
+
+         or 
+         accept Start do
+         delay 10.0;
+         godness_of_heart_level := Random_Godness.Random(G);
+         Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
+         if godness_of_heart_level >7 then
+         requeue Noble_gift; --requeue do samego siebie
+         else 
+         requeue Start; --requeue do samego siebie
+         end if;
+         
+         end Start;
+      end select;
+      end loop;
+   end Charity_Event;
+
+
+
+
+
    begin
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       Setup_Variables;
@@ -358,11 +369,11 @@ procedure Simulation is
 
 
    
-   Task1 : Charity_Event;
+  
    
    ---"MAIN" FOR SIMULATION---
 begin
-   Task1.Start;
+   
    for I in 1 .. Number_Of_Producers loop
       P(I).Start(I, 10);
    end loop;
