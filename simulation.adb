@@ -14,18 +14,16 @@ with Ada.Numerics.Float_Random;
 
 
 procedure Simulation is
+
+   
+
+
    ----GLOBAL VARIABLES---
    Number_Of_Items: constant Integer := 5;
    Number_Of_Producers: constant Integer := 5;
    Number_Of_Assemblies: constant Integer := 3;
    Number_Of_Customers: constant Integer := 3;
-   --TODO refactor to use enumeration
-   -- type Item_Type is 
-   --    (Pasta, Potato, Tomato, Chicken, Pork);
-   -- type Assembly_Type is
-   --    (Bolognes, Steak, Hamburger);
-   -- type Customer_Type is
-   --    (Customer1, Customer2, Customer3);
+   
    subtype Item_Type is Integer range 1 .. Number_Of_Items;
    subtype Assembly_Type is Integer range 1 .. Number_Of_Assemblies;
    subtype Customer_Type is Integer range 1 .. Number_Of_Customers;
@@ -61,17 +59,59 @@ procedure Simulation is
       entry Take(Item: in Item_Type; Number: in Integer; Accepted: out Boolean);
       -- Deliver an assembly (provided there are enough Items for it)
       entry Deliver(Assembly: in Assembly_Type; Number: out Integer);
+      -- Accept a noble gift
+      entry Noble_gift;
    end Buffer;
+
+   task type Charity_Event is
+      entry Noble_gift;
+      entry Start;
+   end Charity_Event;
 
    P: array ( 1 .. Number_Of_Producers ) of Producer;
    K: array ( 1 .. Number_Of_Customers ) of Customer;
    B: Buffer;
+   N: Charity_Event;
+
 
 
    ----TASK DEFINITIONS----
 
-   
+   --Charity_Event--
+ task body Charity_Event is
+   package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
+   G: Random_Godness.Generator;
+   godness_of_heart_level: Godness_Type;
 
+   
+   begin
+      Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
+         Random_Godness.Reset(G);
+      loop
+         select
+            accept Noble_gift do
+               B.Noble_gift;
+               delay 1.0;
+               requeue Start; --requeue do samego siebie
+            end Noble_gift;
+
+         or 
+            accept Start do
+               delay 2.0;
+               godness_of_heart_level := Random_Godness.Random(G);
+               Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
+               if godness_of_heart_level >7 then
+                     delay 1.0;
+                     requeue Noble_gift; --requeue do samego siebie
+                  else 
+                     delay 1.0;
+                     requeue Start; --requeue do samego siebie
+               end if;
+            
+            end Start;
+         end select;
+      end loop;
+   end Charity_Event;
 
 
    --Producer--
@@ -166,10 +206,13 @@ procedure Simulation is
    --Buffer--
 
    task body Buffer is
-      task type Charity_Event is
-      entry Noble_gift;
-      entry Start;
-      end Charity_Event;
+
+
+      
+
+
+
+
       Storage_Capacity: constant Integer := 30;
       type Storage_type is array (Item_Type) of Integer;
       Storage: Storage_type
@@ -190,9 +233,19 @@ procedure Simulation is
         := (1, 1, 1);
       In_Storage: Integer := 0;
 
+
+      procedure Complete_Noble_Gift is
+      begin
+         for I in 1 .. Number_Of_Producers loop
+            Storage(I) := Storage(I) /2;
+         end loop;
+         Put_Line(ESC & "[92m" & "Charity_Event: Resources distributed" & ESC & "[0m");
+      end Complete_Noble_Gift;
+
+
       procedure Setup_Variables is
       begin
-         Noble.Start; --uruchomienie Charity_Event
+         
          for W in Item_Type loop
             Max_Assembly_Content(W) := 0;
             for Z in Assembly_Type loop
@@ -263,57 +316,13 @@ procedure Simulation is
          Put_Line("|   Number of Items in storage: " & Integer'Image(In_Storage));
 
       end Storage_Contents;
-      
-      
-      --Charity_Event--
-
-   task body Charity_Event is
-   package Random_Godness is new Ada.Numerics.Discrete_Random(Godness_Type);
-   G: Random_Godness.Generator;
-   godness_of_heart_level: Godness_Type;
-
-   procedure Complete_Noble_Gift is
-   begin
-      for I in 1 .. Number_Of_Producers loop
-         Storage(I) := Storage(I) /2;
-      end loop;
-      Put_Line(ESC & "[92m" & "Charity_Event: Resources distributed" & ESC & "[0m");
-   end Complete_Noble_Gift;
-   begin
-      Put_Line(ESC & "[92m" & "Charity_Event: Started" & ESC & "[0m");
-   Random_Godness.Reset(G);
-      loop
-      select
-         accept Noble_gift do
-         Complete_Noble_Gift; --funkcja ktora wykonuje sie po otrzymaniu Noble_gift
-         requeue Start; --requeue do samego siebie
-         end Noble_gift;
-
-         or 
-         accept Start do
-         delay 10.0;
-         godness_of_heart_level := Random_Godness.Random(G);
-         Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
-         if godness_of_heart_level >7 then
-         requeue Noble_gift; --requeue do samego siebie
-         else 
-         requeue Start; --requeue do samego siebie
-         end if;
-         
-         end Start;
-      end select;
-      end loop;
-   end Charity_Event;
-
-
-
 
 
    begin
       Put_Line(ESC & "[91m" & "B: Buffer started" & ESC & "[0m");
       Setup_Variables;
       loop
-         
+        
          select
             --przyjmuje lub odrzuca ugotowany skladnik
             accept Take(Item: in Item_Type; Number: in Integer; Accepted: out Boolean) do
@@ -357,6 +366,10 @@ procedure Simulation is
                end if;
             end Deliver;
             Storage_Contents;
+         or 
+            accept Noble_gift do
+               Complete_Noble_Gift;
+            end Noble_gift;
          or
             delay 2.0; --wejdzie tu jak w ciagu 1 sek nie dostanie Buffer Take albo Buffer Deliver, potem select jest od nowa
             Put_Line(".........Jestem w select or delay 1.0......."); 
@@ -370,7 +383,6 @@ procedure Simulation is
 
    
   
-   
    ---"MAIN" FOR SIMULATION---
 begin
    
@@ -380,6 +392,7 @@ begin
    for J in 1 .. Number_Of_Customers loop
       K(J).Start(J,12);
    end loop;
+   N.Start;
 end Simulation;
 
 
