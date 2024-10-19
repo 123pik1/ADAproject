@@ -194,7 +194,7 @@ procedure Simulation is
                     Assembly_Name(Assembly_Type) & " number " &
                        Integer'Image(Assembly_Number) & ESC & "[0m");
          else
-            Put_Line(ESC & "[96m" & Consumer_Name(Customer_Nb) & "Oh, okay. Can I get something different then?" & ESC & "[0m");
+            Put_Line(ESC & "[96m" & Consumer_Name(Customer_Nb) & ": Oh, okay. Can I get something different then?" & ESC & "[0m");
          end if;
            
       end loop;
