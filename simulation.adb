@@ -101,7 +101,6 @@ procedure Simulation is
                godness_of_heart_level := Random_Godness.Random(G);
                Put_Line(ESC & "[92m" & "Charity_Event: Godness of heart level: " & Integer'Image(godness_of_heart_level) & ESC & "[0m");
                if godness_of_heart_level >7 then
-                     delay 1.0;
                      requeue Noble_gift; --requeue do samego siebie
                   else 
                      delay 1.0;
@@ -195,8 +194,7 @@ procedure Simulation is
                     Assembly_Name(Assembly_Type) & " number " &
                        Integer'Image(Assembly_Number) & ESC & "[0m");
          else
-            Put_Line(ESC & "[96m" & "C: " & Consumer_Name(Customer_Nb) & " could not get dish " &
-                       Assembly_Name(Assembly_Type) & " due to lack of ingredients" & ESC & "[0m");
+            Put_Line(ESC & "[96m" & Consumer_Name(Customer_Nb) & "Oh, okay. Can I get something different then?" & ESC & "[0m");
          end if;
            
       end loop;
@@ -371,10 +369,9 @@ procedure Simulation is
                Complete_Noble_Gift;
             end Noble_gift;
          or
-            delay 2.0; --wejdzie tu jak w ciagu 1 sek nie dostanie Buffer Take albo Buffer Deliver, potem select jest od nowa
-            Put_Line(".........Jestem w select or delay 1.0......."); 
-            delay 10.0;
-            Put_Line("Odczekalem 10sek delayu w select or delay 1.0.....zaczynam selecta od nowa");
+            delay 1.5; --wejdzie tu jak w ciagu 1.5 sek nie dostanie Buffer Take albo Buffer Deliver, potem select jest od nowa
+            Put_Line("We are currently taking a short break to clean and sanitize our dishes. We will resume service shortly");
+            delay 3.0;
          end select;
 
       end loop;
